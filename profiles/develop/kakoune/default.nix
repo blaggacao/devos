@@ -1,8 +1,9 @@
 { pkgs, ... }: {
-  imports = [ ../python ];
+  imports = [ ../python ../haskell ];
 
   environment.systemPackages = with pkgs; [
     clang-tools
+    editorconfig-core-c
     kak-lsp
     kakoune-config
     kakoune-unwrapped
@@ -12,16 +13,11 @@
     nix-linter
     dhall
     dhall-lsp-server
+    haskellPackages.haskell-language-server
   ];
 
   environment.etc = {
-    "xdg/kak-lsp/kak-lsp.toml".text = ''
-      ${builtins.readFile "${pkgs.kak-lsp.src}/kak-lsp.toml"}
-      [language.dhall]
-      filetypes = ["dhall"]
-      roots = [".git"]
-      command = "dhall-lsp-server"
-    '';
+    "xdg/kak-lsp/kak-lsp.toml".source = ./kak-lsp.toml;
     "xdg/kak/kakrc".source = ./kakrc;
     "xdg/kak/autoload/plugins".source = ./plugins;
     "xdg/kak/autoload/lint".source = ./lint;

@@ -34,18 +34,60 @@ Flakes are still new, so not everything works yet. However, it has been to
 merged in [nixpkgs][nixpkgs] via [`pkgs.nixFlakes`][nixFlakes]. Thus, this
 project should be considered _experimental_, until flakes become the default.
 
-Also, flakes are meant to deprecate nix-channels. It's recommend not to install
-any. If your really want them, they should work if you hook them into
+Also, flakes are meant to deprecate nix-channels. It's recommended not to
+install any. If your really want them, they should work if you hook them into
 `NIX_PATH`.
 
+# Sharing
+One of the great benefits of flakes is the ability to easily share your user
+defined packages, modules and other nix expressions without having to merge
+anything upstream. In that spirit, everything defined in this flake is usable
+from other flakes. So even if you don't want to use this project as a template,
+you can still pull in any useful modules, packages or profiles defined here.
+
+From the command line:
+```sh
+# to see what this flake exports
+nix flake show "github:nrdxp/nixflk"
+
+# run an app
+nix run "github:nrdxp/nixflk#someApp"
+
+# start a dev shell for a given derivation
+nix develop "github:nrdxp/nixflk#somePackage"
+
+# a nix shell with the package in scope
+nix shell "github:nrdxp/nixflk#somePackage"
+```
+
+From within a flake:
+```nix
+{
+  inputs.nixflk.url = "github:nrdxp/nixflk";
+
+  outputs = { self, nixpkgs, nixflk, ... }:
+  {
+    nixosConfigurations.example = nixpkgs.lib.nixosSystem {
+      # ...
+        modules = [
+        nixflk.nixosModules.someModule
+        ({
+          nixpkgs.overlays = [ nixflk.overlay nixflk.overlays.someOverlay ];
+        })
+        # ...
+      ];
+    };
+  };
+}
+```
+
 # Setup
-There are many way to get up and running. You can fork this repo or use it as
+There are a few ways to get up and running. You can fork this repo or use it as
 a template. There is a [bare branch][bare] if you want to start with a
-completely empty template and make your own profiles from scratch.
+completely empty template and make your own profiles from scratch. The only
+hard requirement is nix itself. The `shell.nix` will pull in everything else.
 
-You'll need to have NixOS already installed since the `nixos-install` script
-doesn't yet support flakes.
-
+## Flake Templates
 If you already have [nix-command][nix-command] setup you can:
 ```sh
 # for standard template
@@ -55,35 +97,58 @@ nix flake new -t "github:nrdxp/nixflk" flk
 nix flake new -t "github:nrdxp/nixflk/bare" flk
 ```
 
-However you decide to acquire the repo, once you have it, you'll want to __move
-or symlink__ it to `/etc/nixos` for ease of use. Once inside:
-
+## Nix Only
+Once you have this repo, you'll want to __move or symlink__ it to `/etc/nixos`
+for ease of use. Once inside:
 ```sh
+# This will setup nix-command and pull in the needed tools
 nix-shell # or `direnv allow` if you prefer
+
+# use nixos-generate-config to generate a basic config for your system
+# edit hosts/up-$(hostname).nix to modify.
+flk up
+
+# The following should work fine for EFI systems.
+# boot.loader.systemd-boot.enable = true;
+# boot.loader.efi.canTouchEfiVariables = true;
+
+# Set your locale
+$EDITOR local/locale.nix
+
+# install NixOS to bare metal
+flk install yourConfig # deploys hosts/yourConfig.nix
+
+# if you already have NixOS and just want to deploy your new setup
+flk yourConfig switch
 ```
 
-From here it's up to you. You can deploy the barebones [NixOS](./hosts/NixOS.nix)
-host and build from there, or you can copy your existing `configuration.nix`.
-You'll probably at least need to setup your `fileSystems` and make sure the
-[locale](./local/locale.nix) is correct.
+### Note on `flk up`:
+While the `up` sub-command is provided as a convenience to quickly set up and
+install a "fresh" NixOS system on current hardware, committing these files is
+discouraged.
 
-Once you're ready to deploy you can use `nixos-rebuild` if your NixOS version
-is recent enough to support flakes, _or_ the [shell.nix](./shell.nix) defines
-its own `flk` command in case you need it.
-
-```sh
-# Usage: flk host {switch|boot|test|iso}
-flk <host-filename> test
-```
+They are placed in the git staging area automatically because they would be
+invisible to the flake otherwise, but it is best to move what you need from
+them directly into your hosts file and commit that instead.
 
 ## Build an ISO
 
+You can make an ISO and customize it by modifying the [niximg](./hosts/niximg.nix)
+file:
 ```sh
 flk iso
 ```
 
-You can make an ISO and customize it by modifying the [niximg](./hosts/niximg.nix)
-file:
+## Hardware Specific Profile for a Single Host
+
+Find out the fitting [nixos-hardware profile](https://github.com/NixOS/nixos-hardware#list-of-profiles) for the hardware of your host, then find the corresponding modules in the [flake](https://github.com/NixOS/nixos-hardware/blob/master/flake.nix) and add it to the configuration.
+For example for a Dell XPS 13 9370 the host configuration would contain:
+```nix
+{
+  imports = [ hardware.dell-xps-13-9370 ... ];
+  ...
+}
+```
 
 ## Use a Package from NUR
 
@@ -121,7 +186,7 @@ licenses of the respective packages.
 
 [bare]: https://github.com/nrdxp/nixflk/tree/bare
 [direnv]: https://direnv.net
-[home-manager]: https://github.com/rycee/home-manager
+[home-manager]: https://github.com/nix-community/home-manager
 [nix-command]: https://nixos.wiki/wiki/Nix_command
 [nixFlakes]: https://github.com/NixOS/nixpkgs/blob/master/pkgs/tools/package-management/nix/default.nix#L211
 [NixOS]: https://nixos.org
