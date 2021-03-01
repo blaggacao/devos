@@ -65,7 +65,9 @@
               inherit (pkgs) lib;
             });
 
-          overlay = import ./pkgs { inherit name; };
+          overlay = import ./pkgs { inherit nixos name; };
+
+          lib = import ./lib { inherit nixos; };
 
           templates.flk.path = ./.;
 
