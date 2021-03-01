@@ -49,7 +49,7 @@
 
       pkgs' = genPkgs { inherit self; };
 
-      name = "divnix"; # change to your user name
+      name = "divnix"; # change to your user or environment name
 
       outputs =
         let
