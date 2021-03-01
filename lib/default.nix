@@ -4,7 +4,7 @@ let
     pathExists filter;
 
   inherit (nixos.lib) fold filterAttrs hasSuffix mapAttrs' nameValuePair removeSuffix
-    recursiveUpdate genAttrs nixosSystem mkForce;
+    recursiveUpdate genAttrs nixosSystem mkForce substring optionalAttrs;
 
   # mapFilterAttrs ::
   #   (name -> value -> bool )
@@ -58,15 +58,15 @@ let
   });
 
   /**
-  Synopsis: importDefaults _path_
+  Synopsis: mkProfileAttrs _path_
 
   Recursively import the subdirs of _path_ containing a default.nix.
 
   Example:
-  let profiles = importDefaults ./profiles; in
+  let profiles = mkProfileAttrs ./profiles; in
   assert profiles ? core.default; 0
   **/
-  importDefaults = dir:
+  mkProfileAttrs = dir:
     let
       imports =
         let
@@ -74,22 +74,26 @@ let
 
           p = n: v:
             v == "directory"
-            && pathExists "${dir}/${n}/default.nix";
+            && n != "profiles";
         in
         filterAttrs p files;
 
       f = n: _:
-        { default = import "${dir}/${n}/default.nix"; }
-        // importDefaults "${dir}/${n}";
+        optionalAttrs
+          (pathExists "${dir}/${n}/default.nix")
+          { default = "${dir}/${n}"; }
+        // mkProfileAttrs "${dir}/${n}";
     in
     mapAttrs f imports;
 
 in
 {
-  inherit importDefaults mapFilterAttrs genAttrs' pkgImport
+  inherit mkProfileAttrs mapFilterAttrs genAttrs' pkgImport
     pathsToImportedAttrs mkNodes;
 
   overlays = pathsToImportedAttrs overlayPaths;
+
+  mkVersion = src: "${substring 0 8 src.lastModifiedDate}_${src.shortRev}";
 
   genPkgs = { self }:
     let inherit (self) inputs;
@@ -105,6 +109,7 @@ in
             (overridesOverlay overridePkgs)
             self.overlay
             (final: prev: {
+              srcs = self.inputs.srcs.inputs;
               lib = (prev.lib or { }) // {
                 inherit (nixos.lib) nixosSystem;
                 flk = self.lib;
