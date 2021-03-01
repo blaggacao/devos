@@ -49,7 +49,7 @@
 
       pkgs' = genPkgs { inherit self; };
 
-      name = "divnix";
+      name = "divnix"; # change to your user name
 
       outputs =
         let
