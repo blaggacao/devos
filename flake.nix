@@ -49,7 +49,7 @@
 
       pkgs' = genPkgs { inherit self; };
 
-      name = "devos";
+      name = "divnix";
 
       outputs =
         let
