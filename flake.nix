@@ -49,8 +49,6 @@
 
       pkgs' = genPkgs { inherit self; };
 
-      name = "divnix"; # change to your user or environment name
-
       outputs =
         let
           system = "x86_64-linux";
@@ -65,7 +63,7 @@
               inherit (pkgs) lib;
             });
 
-          overlay = import ./pkgs { inherit nixos name; };
+          overlay = import ./pkgs;
 
           lib = import ./lib { inherit nixos; };
 
