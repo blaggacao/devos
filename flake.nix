@@ -49,6 +49,8 @@
 
       pkgs' = genPkgs { inherit self; };
 
+      name = "devos";
+
       outputs =
         let
           system = "x86_64-linux";
@@ -63,7 +65,7 @@
               inherit (pkgs) lib;
             });
 
-          overlay = import ./pkgs;
+          overlay = import ./pkgs { inherit name; };
 
           templates.flk.path = ./.;
 
