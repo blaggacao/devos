@@ -1,4 +1,4 @@
-{ nixos, ... }:
+{ nixos, pkgs, ... }:
 let
   inherit (builtins) attrNames attrValues isAttrs readDir listToAttrs mapAttrs
     pathExists filter;
@@ -117,8 +117,8 @@ in
               };
             })
           ]
-          ++ (attrValues self.overlays)
-          ++ extern.overlays;
+          ++ extern.overlays
+          ++ (attrValues self.overlays);
         in
         { pkgs = pkgImport nixos overlays system; }
       )
