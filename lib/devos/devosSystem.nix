@@ -13,6 +13,10 @@ lib.nixosSystem (args // {
             "${nixos}/${modpath}/${cd}"
             ({ config, ... }: {
               isoImage.isoBaseName = "nixos-" + config.networking.hostName;
+              isoImage.contents = [{
+                source = ../..;
+                target = "/devos/";
+              }];
               # confilcts with networking.wireless which might be slightly
               # more useful on a stick
               networking.networkmanager.enable = lib.mkForce false;
